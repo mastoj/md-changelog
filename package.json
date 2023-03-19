@@ -4,7 +4,7 @@
   "description": "NPX command to generate a markdown changelog",
   "main": "build/changelog.js",
   "bin": {
-    "md-changelog": "build/cli.js"
+    "@mastoj/md-changelog": "build/cli.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
