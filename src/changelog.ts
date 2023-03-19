@@ -22,6 +22,11 @@ export type Commit = {
 export type GetCommitResult = {
   commits: Commit[];
 };
+
+export type ChangeLogItem = Commit & {
+  pr?: number;
+  tickets: string[];
+};
 // Use octokit to get the commits between two revisions
 export const getCommitsBetweenTwoRevisions = ({
   repo,
@@ -42,4 +47,15 @@ export const getCommitsBetweenTwoRevisions = ({
     }));
     return { commits };
   });
+};
+
+export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
+  const headerParts = commit.header.split("#");
+  const pr =
+    headerParts.length > 1 ? parseInt(headerParts[1].split(")")[0]) : undefined;
+  const tickets = commit.body
+    .split("\n")
+    .filter((l) => l.startsWith("Fixes"))
+    .map((l) => l.replace("Fixes", "").trim());
+  return { ...commit, pr, tickets };
 };
