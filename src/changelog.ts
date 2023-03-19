@@ -62,7 +62,6 @@ export const getCommitsBetweenTwoRevisions = async ({
       base: from,
       head: to,
     });
-    console.log("==> The response: ", response);
     const commits = response.data.commits
       .map((c) => ({
         sha: c.sha,
