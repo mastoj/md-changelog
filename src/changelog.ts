@@ -1,27 +1,25 @@
 import { Octokit } from "octokit";
-
-const octokit = new Octokit({ auth: process.env.GH_TOKEN });
+import Handlebars from "handlebars";
 
 export type Repo = {
   owner: string;
-  name: string;
+  repo: string;
 };
 
 export type GetCommitArgs = {
   repo: Repo;
   from: string;
   to: string;
+  dropMergeCommits: boolean;
+  ghToken?: string;
 };
 
 export type Commit = {
   sha: string;
+  shortSha: string;
   header: string;
   body: string;
   url: string;
-};
-
-export type GetCommitResult = {
-  commits: Commit[];
 };
 
 export type Ticket = {
@@ -38,27 +36,53 @@ export type ChangeLogItem = Commit & {
   pr?: PullRequest;
   tickets: Ticket[];
 };
+
+export type ChangeLog = {
+  from: string;
+  to: string;
+  items: ChangeLogItem[];
+};
 // Use octokit to get the commits between two revisions
-export const getCommitsBetweenTwoRevisions = ({
+export const getCommitsBetweenTwoRevisions = async ({
   repo,
   from,
   to,
+  dropMergeCommits,
+  ghToken = process.env.GH_TOKEN,
 }: GetCommitArgs) => {
-  const response = octokit.rest.repos.compareCommits({
-    owner: repo.owner,
-    repo: repo.name,
-    base: from,
-    head: to,
-  });
-  return response.then((r) => {
-    const commits = r.data.commits.map((c) => ({
-      sha: c.sha,
-      header: c.commit.message.split("\n")[0],
-      body: c.commit.message.split("\n").slice(1).join("\n"),
-      url: c.html_url,
-    }));
-    return { commits };
-  });
+  if (!ghToken) {
+    throw new Error("Pass in ghToken or set env var GH_TOKEN");
+  }
+  const octokit = new Octokit({ auth: ghToken });
+
+  try {
+    const response = await octokit.rest.repos.compareCommits({
+      owner: repo.owner,
+      repo: repo.repo,
+      base: from,
+      head: to,
+    });
+    console.log("==> The response: ", response);
+    const commits = response.data.commits
+      .map((c) => ({
+        sha: c.sha,
+        shortSha: c.sha.substring(0, 7),
+        header: c.commit.message.split("\n")[0],
+        body: c.commit.message.split("\n").slice(1).join("\n"),
+        url: c.html_url,
+      }))
+      .filter(
+        (c) => !dropMergeCommits || !c.header.startsWith("Merge pull request")
+      )
+      .reverse()
+      .map(getChangeLogItem);
+    return { items: commits, from, to } as ChangeLog;
+  } catch (e: any) {
+    throw new Error(
+      "Failed to get commits, are the to and from tags correct?: " +
+        e.message || ""
+    );
+  }
 };
 
 export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
@@ -73,7 +97,11 @@ export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
   const tickets = commit.body
     .split("\n")
     .map((line) => line.split(":"))
-    .filter((parts) => parts[0].trim().toLowerCase() === "ticket")
+    .filter(
+      (parts) =>
+        parts[0].trim().toLowerCase() === "ticket" ||
+        parts[0].trim().toLowerCase() === "tickets"
+    )
     .map((parts) => parts[1].split(","))
     .flat()
     .map((id) => id.trim())
@@ -83,4 +111,35 @@ export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
     }));
 
   return { ...commit, pr, tickets };
+};
+
+const defaultSource = `# Changelog for revision {{from}} to {{to}}
+
+{{#if body}}
+{{body}}
+
+{{/if}}
+## Changes:
+
+{{#each items}}
+* [{{shortSha}}]({{url}}) **{{header}}**
+{{#if pr}}
+
+  * Pull request: [{{pr.id}}]({{pr.url}})
+{{/if}}
+{{#if tickets}}
+
+  * Tickets: 
+
+  {{#each tickets}}
+    * [{{id}}]({{url}}) 
+  {{/each}}
+
+{{/if}}
+
+{{/each}}
+`;
+export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
+  const template = Handlebars.compile(source);
+  return template(changeLog);
 };
