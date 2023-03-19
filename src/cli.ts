@@ -9,10 +9,10 @@ const main = async () => {
       name: "branches",
     },
     from: "v1.0.0",
-    to: "v1.0.7",
+    to: "v1.0.20",
   });
-  const changeLogItems = result.commits.map(getChangeLogItem);
-  console.log(changeLogItems);
+  const changeLogItems = result.commits.map(getChangeLogItem).reverse();
+  console.log(JSON.stringify(changeLogItems, null, 2));
 };
 
 main();
