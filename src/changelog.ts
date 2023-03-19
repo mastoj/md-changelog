@@ -112,13 +112,13 @@ export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
   return { ...commit, pr, tickets };
 };
 
-const defaultSource = `# Changelog for revision {{from}} to {{to}}
+const defaultSource = `**Changelog for revision {{from}} to {{to}}**
 
 {{#if body}}
 {{body}}
 
 {{/if}}
-## Changes:
+_Changes_:
 
 {{#each items}}
 * [{{shortSha}}]({{url}}) **{{header}}**
