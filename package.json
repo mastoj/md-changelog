@@ -1,0 +1,38 @@
+{
+  "name": "md-changelog",
+  "version": "0.0.1",
+  "description": "NPX command to generate a markdown changelog",
+  "main": "build/cli.js",
+  "bin": {
+    "md-changelog": "build/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "pkg . --targets node14-macos-x64 --output hello",
+    "build": "npx tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mastoj/md-changelog.git"
+  },
+  "keywords": [
+    "automation",
+    "git",
+    "tool"
+  ],
+  "author": "Tomas Jansson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mastoj/md-changelog/issues"
+  },
+  "homepage": "https://github.com/mastoj/md-changelog#readme",
+  "dependencies": {
+    "octokit": "^2.0.14",
+    "yargs": "^17.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.3",
+    "@types/yargs": "^17.0.22",
+    "typescript": "^5.0.2"
+  }
+}
