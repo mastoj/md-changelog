@@ -136,14 +136,14 @@ const defaultSource = `**Changelog for revision {{from}} to {{to}}**
 _Changes_:
 
 {{#each items}}
-* [{{shortSha}}]({{url}}) **{{header}}**
+- [{{shortSha}}]({{url}}) **{{header}}**
 {{#if pr}}
-  * Pull request: [{{pr.id}}]({{pr.url}})
+  - Pull request: [{{pr.id}}]({{pr.url}})
 {{/if}}
 {{#if tickets}}
-  * Tickets: 
+  - Tickets: 
   {{#each tickets}}
-    * [{{id}}]({{url}}) 
+    - [{{id}}]({{url}}) 
   {{/each}}
 {{/if}}
 {{/each}}
@@ -151,6 +151,6 @@ _Changes_:
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
   const template = Handlebars.compile(source);
   const result = template(changeLog);
-  const massageMessage = result.replace(/\n\n/g, "\n\n\n\n‌‌ \n\n\n\n");
+  const massageMessage = result.replace(/\n\n/g, "\r\r");
   return massageMessage;
 };
