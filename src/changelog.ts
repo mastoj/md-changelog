@@ -129,7 +129,7 @@ _Changes_:
   {{/each}}
 {{/if}}
 {{/each}}
-`;
+`.replace("\n", "<br />");
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
   const template = Handlebars.compile(source);
   return template(changeLog);
