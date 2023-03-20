@@ -151,6 +151,6 @@ _Changes_:
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
   const template = Handlebars.compile(source);
   const result = template(changeLog);
-  const massageMessage = result.replace(/\n\n/g, "\r\r");
+  const massageMessage = result.replace(/\n/g, "\r");
   return massageMessage;
 };
