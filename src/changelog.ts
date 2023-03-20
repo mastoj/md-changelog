@@ -113,29 +113,21 @@ export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
 };
 
 const defaultSource = `**Changelog for revision {{from}} to {{to}}**
-
 {{#if body}}
 {{body}}
-
 {{/if}}
 _Changes_:
-
 {{#each items}}
 * [{{shortSha}}]({{url}}) **{{header}}**
 {{#if pr}}
-
   * Pull request: [{{pr.id}}]({{pr.url}})
 {{/if}}
 {{#if tickets}}
-
   * Tickets: 
-
   {{#each tickets}}
     * [{{id}}]({{url}}) 
   {{/each}}
-
 {{/if}}
-
 {{/each}}
 `;
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
