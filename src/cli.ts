@@ -14,6 +14,7 @@ const main = async () => {
       repo: { type: "string", demandOption: true },
       changeLogTemplate: { type: "string", demandOption: false },
       ghToken: { type: "string", demandOption: false },
+      ticketUrlTemplate: { type: "string", demandOption: false },
     })
     .parseSync();
 
@@ -26,6 +27,7 @@ const main = async () => {
     to: argv.to,
     dropMergeCommits: argv.dropMergeCommits,
     ghToken: argv.ghToken,
+    ticketUrlTemplateSource: argv.ticketUrlTemplate,
   });
   const mdChangeLog = toMarkdown(result, argv.changeLogTemplate);
   console.log(mdChangeLog);

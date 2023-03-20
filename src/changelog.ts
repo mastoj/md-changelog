@@ -12,9 +12,11 @@ export type GetCommitArgs = {
   to: string;
   dropMergeCommits: boolean;
   ghToken?: string;
+  ticketUrlTemplateSource?: string;
 };
 
 export type Commit = {
+  repo: Repo;
   sha: string;
   shortSha: string;
   header: string;
@@ -24,7 +26,7 @@ export type Commit = {
 
 export type Ticket = {
   id: string;
-  url: string;
+  url?: string;
 };
 
 export type PullRequest = {
@@ -49,6 +51,7 @@ export const getCommitsBetweenTwoRevisions = async ({
   to,
   dropMergeCommits,
   ghToken = process.env.GH_TOKEN,
+  ticketUrlTemplateSource,
 }: GetCommitArgs) => {
   if (!ghToken) {
     throw new Error("Pass in ghToken or set env var GH_TOKEN");
@@ -61,6 +64,7 @@ export const getCommitsBetweenTwoRevisions = async ({
       repo: repo.repo,
       base: from,
       head: to,
+      ticketUrlTemplateSource: ticketUrlTemplateSource,
     });
     const commits = response.data.commits
       .map((c) => ({
@@ -69,12 +73,13 @@ export const getCommitsBetweenTwoRevisions = async ({
         header: c.commit.message.split("\n")[0],
         body: c.commit.message.split("\n").slice(1).join("\n"),
         url: c.html_url,
+        repo: repo,
       }))
       .filter(
         (c) => !dropMergeCommits || !c.header.startsWith("Merge pull request")
       )
       .reverse()
-      .map(getChangeLogItem);
+      .map(getChangeLogItem(ticketUrlTemplateSource));
     return { items: commits, from, to } as ChangeLog;
   } catch (e: any) {
     throw new Error(
@@ -84,33 +89,46 @@ export const getCommitsBetweenTwoRevisions = async ({
   }
 };
 
-export const getChangeLogItem = (commit: Commit): ChangeLogItem => {
-  const headerParts = commit.header.split("#");
+export const getChangeLogItem =
+  (ticketUrlTemplateSource: string) =>
+  (commit: Commit): ChangeLogItem => {
+    const headerParts = commit.header.split("#");
 
-  const prId =
-    headerParts.length > 1 ? parseInt(headerParts[1].split(")")[0]) : undefined;
-  const pr = prId
-    ? { id: prId, url: `https://www.github.com/mastoj/branches/pull/${prId}` }
-    : undefined;
-  // Tickets are in the format: TICKET: ID-123, ID-456, PROJX-789 and can be any line in the body.
-  const tickets = commit.body
-    .split("\n")
-    .map((line) => line.split(":"))
-    .filter(
-      (parts) =>
-        parts[0].trim().toLowerCase() === "ticket" ||
-        parts[0].trim().toLowerCase() === "tickets"
-    )
-    .map((parts) => parts[1].split(","))
-    .flat()
-    .map((id) => id.trim())
-    .map((id) => ({
-      id,
-      url: `https://jira.example.com/browse/${id}`,
-    }));
+    const prId =
+      headerParts.length > 1
+        ? parseInt(headerParts[1].split(")")[0])
+        : undefined;
+    const pr = prId
+      ? {
+          id: prId,
+          url: `https://www.github.com/${commit.repo.owner}/${commit.repo.repo}/pull/${prId}`,
+        }
+      : undefined;
+    // Tickets are in the format: TICKET: ID-123, ID-456, PROJX-789 and can be any line in the body.
+    const ticketUrlTemplate = ticketUrlTemplateSource
+      ? Handlebars.compile(ticketUrlTemplateSource)
+      : undefined;
+    const tickets = commit.body
+      .split("\n")
+      .map((line) => line.split(":"))
+      .filter(
+        (parts) =>
+          parts[0].trim().toLowerCase() === "ticket" ||
+          parts[0].trim().toLowerCase() === "tickets"
+      )
+      .map((parts) => parts[1].split(","))
+      .flat()
+      .map((id) => id.trim())
+      .map(
+        (id) =>
+          ({
+            id,
+            url: ticketUrlTemplate ? ticketUrlTemplate({ id }) : undefined,
+          } as Ticket)
+      );
 
-  return { ...commit, pr, tickets };
-};
+    return { ...commit, pr, tickets };
+  };
 
 const defaultSource = `**Changelog for revision {{from}} to {{to}}**
 {{#if body}}
