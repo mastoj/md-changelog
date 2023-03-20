@@ -90,7 +90,7 @@ export const getCommitsBetweenTwoRevisions = async ({
 };
 
 export const getChangeLogItem =
-  (ticketUrlTemplateSource: string) =>
+  (ticketUrlTemplateSource?: string) =>
   (commit: Commit): ChangeLogItem => {
     const headerParts = commit.header.split("#");
 
@@ -131,10 +131,10 @@ export const getChangeLogItem =
   };
 
 const defaultSource = `**Changelog for revision {{from}} to {{to}}**
-{{#if body}}
-{{body}}
-{{/if}}
+{{#if body}}{{body}}{{/if}}
+
 _Changes_:
+
 {{#each items}}
 * [{{shortSha}}]({{url}}) **{{header}}**
 {{#if pr}}
@@ -150,5 +150,7 @@ _Changes_:
 `;
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
   const template = Handlebars.compile(source);
-  return template(changeLog);
+  const result = template(changeLog);
+  const massageMessage = result.replace(/\n\n/g, "\n\n\n\n‌‌ \n\n\n\n");
+  return template(massageMessage);
 };
