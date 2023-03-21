@@ -1,6 +1,6 @@
 {
   "name": "@mastoj/md-changelog",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "NPX command to generate a markdown changelog",
   "main": "build/changelog.js",
   "bin": {
