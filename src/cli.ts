@@ -29,8 +29,12 @@ const main = async () => {
     ghToken: argv.ghToken,
     ticketUrlTemplateSource: argv.ticketUrlTemplate,
   });
-  const mdChangeLog = toMarkdown(result, argv.changeLogTemplate);
-  console.log(mdChangeLog);
+  const template = argv.changeLogTemplate
+    ? argv.changeLogTemplate.replaceAll("\\n", "\n")
+    : undefined;
+  const mdChangeLog = toMarkdown(result, template);
+  process.stdout.write(mdChangeLog);
+  //   console.log(mdChangeLog);
 };
 
 main();
