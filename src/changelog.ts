@@ -150,7 +150,6 @@ _Changes_:
 `;
 export const toMarkdown = (changeLog: ChangeLog, source = defaultSource) => {
   const template = Handlebars.compile(source);
-  console.log("changeLog", changeLog);
   const result = template(changeLog);
   return result;
 };
