@@ -164,7 +164,7 @@ const getTickets = (
 const defaultSource = `**Changelog for revision {{from}} to {{to}}**
 {{#if body}}{{body}}{{/if}}
 
-_Changesn_:
+_Changes_:
 
 {{#each items}}
 - [{{shortSha}}]({{url}}) **{{header}}**
