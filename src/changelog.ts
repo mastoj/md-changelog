@@ -36,6 +36,7 @@ export type PullRequest = {
 
 export type ChangeLogItem = Commit & {
   pr?: PullRequest;
+  mainTicket?: Ticket;
   tickets: Ticket[];
 };
 
@@ -70,13 +71,13 @@ export const getCommitsBetweenTwoRevisions = async ({
       .map((c) => ({
         sha: c.sha,
         shortSha: c.sha.substring(0, 7),
-        header: c.commit.message.split("\n")[0],
+        header: c.commit.message.split("\n")[0] ?? "",
         body: c.commit.message.split("\n").slice(1).join("\n"),
         url: c.html_url,
         repo: repo,
       }))
       .filter(
-        (c) => !dropMergeCommits || !c.header.startsWith("Merge pull request")
+        (c) => !dropMergeCommits || !c.header?.startsWith("Merge pull request")
       )
       .reverse()
       .map(getChangeLogItem(ticketUrlTemplateSource));
@@ -95,45 +96,75 @@ export const getChangeLogItem =
     const headerParts = commit.header.split("#");
 
     const prId =
-      headerParts.length > 1
-        ? parseInt(headerParts[1].split(")")[0])
+      headerParts.length > 2
+        ? parseInt(headerParts[1]?.split(")")[0] ?? "")
         : undefined;
+
     const pr = prId
       ? {
           id: prId,
-          url: `https://www.github.com/${commit.repo.owner}/${commit.repo.repo}/pull/${prId}`,
+          url: `===> https://www.github.com/${commit.repo.owner}/${commit.repo.repo}/pull/${prId}`,
         }
       : undefined;
     // Tickets are in the format: TICKET: ID-123, ID-456, PROJX-789 and can be any line in the body.
     const ticketUrlTemplate = ticketUrlTemplateSource
       ? Handlebars.compile(ticketUrlTemplateSource)
       : undefined;
-    const tickets = commit.body
-      .split("\n")
-      .map((line) => line.split(":"))
-      .filter(
-        (parts) =>
-          parts[0].trim().toLowerCase() === "ticket" ||
-          parts[0].trim().toLowerCase() === "tickets"
-      )
-      .map((parts) => parts[1].split(","))
-      .flat()
-      .map((id) => id.trim())
-      .map(
-        (id) =>
-          ({
-            id,
-            url: ticketUrlTemplate ? ticketUrlTemplate({ id }) : undefined,
-          } as Ticket)
-      );
-
-    return { ...commit, pr, tickets };
+    const mainTicket = getMainTicket(commit.header, ticketUrlTemplateSource);
+    const tickets = getTickets(commit.body, ticketUrlTemplate);
+    return { ...commit, pr, tickets, mainTicket };
   };
+
+// Get the ticket from the header if it exists. The main ticket should
+// be the first thing in the header and has the following should match the rexex [A-Za-z]+-[0-9]+
+// Some examples:
+//   B2X-123 Example ticket
+//   PROJ-98234 Some other ticket
+export const getMainTicket = (
+  header: string,
+  ticketUrlTemplateSource?: string
+) => {
+  const ticketId = header.match(/^[A-Za-z0-9]+-[0-9]+/)?.[0];
+  const ticketUrlTemplate = Handlebars.compile(ticketUrlTemplateSource ?? "");
+  return ticketId
+    ? {
+        id: ticketId,
+        url: ticketUrlTemplate
+          ? ticketUrlTemplate({ id: ticketId })
+          : undefined,
+      }
+    : undefined;
+};
+
+const getTickets = (
+  commitBody: string,
+  ticketUrlTemplate?: HandlebarsTemplateDelegate<any>
+) => {
+  return commitBody
+    .split("\n")
+    .map((line) => line.split(":"))
+    .filter(
+      (parts) =>
+        parts.length > 0 &&
+        (parts[0]?.trim().toLowerCase() === "ticket" ||
+          parts[0]?.trim().toLowerCase() === "tickets")
+    )
+    .map((parts) => parts[1]?.split(","))
+    .flat()
+    .map((id) => id?.trim())
+    .map(
+      (id) =>
+        ({
+          id,
+          url: ticketUrlTemplate ? ticketUrlTemplate({ id }) : undefined,
+        } as Ticket)
+    );
+};
 
 const defaultSource = `**Changelog for revision {{from}} to {{to}}**
 {{#if body}}{{body}}{{/if}}
 
-_Changes_:
+_Changesn_:
 
 {{#each items}}
 - [{{shortSha}}]({{url}}) **{{header}}**

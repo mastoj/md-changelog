@@ -33,8 +33,11 @@ const main = async () => {
     ? argv.changeLogTemplate.replaceAll("\\n", "\n")
     : undefined;
   const mdChangeLog = toMarkdown(result, template);
-  process.stdout.write(mdChangeLog);
-  //   console.log(mdChangeLog);
+  const output = {
+    changelog: mdChangeLog,
+    tickets: result.items.map((item) => item.mainTicket?.id).filter(Boolean),
+  };
+  process.stdout.write(JSON.stringify(output, null, 2));
 };
 
 main();
