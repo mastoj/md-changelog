@@ -85,35 +85,35 @@ export const getCommitsBetweenTwoRevisions = async ({
   } catch (e: any) {
     throw new Error(
       "Failed to get commits, are the to and from tags correct?: " +
-        e.message || ""
+      e.message || ""
     );
   }
 };
 
 export const getChangeLogItem =
   (ticketUrlTemplateSource?: string) =>
-  (commit: Commit): ChangeLogItem => {
-    const headerParts = commit.header.split("#");
+    (commit: Commit): ChangeLogItem => {
+      const headerParts = commit.header.split("#");
 
-    const prId =
-      headerParts.length > 2
-        ? parseInt(headerParts[1]?.split(")")[0] ?? "")
-        : undefined;
+      const prId =
+        headerParts.length > 2
+          ? parseInt(headerParts[1]?.split(")")[0] ?? "")
+          : undefined;
 
-    const pr = prId
-      ? {
+      const pr = prId
+        ? {
           id: prId,
           url: `===> https://www.github.com/${commit.repo.owner}/${commit.repo.repo}/pull/${prId}`,
         }
-      : undefined;
-    // Tickets are in the format: TICKET: ID-123, ID-456, PROJX-789 and can be any line in the body.
-    const ticketUrlTemplate = ticketUrlTemplateSource
-      ? Handlebars.compile(ticketUrlTemplateSource)
-      : undefined;
-    const mainTicket = getMainTicket(commit.header, ticketUrlTemplateSource);
-    const tickets = getTickets(commit.body, ticketUrlTemplate);
-    return { ...commit, pr, tickets, mainTicket };
-  };
+        : undefined;
+      // Tickets are in the format: TICKET: ID-123, ID-456, PROJX-789 and can be any line in the body.
+      const ticketUrlTemplate = ticketUrlTemplateSource
+        ? Handlebars.compile(ticketUrlTemplateSource)
+        : undefined;
+      const mainTicket = getMainTicket(commit.header, ticketUrlTemplateSource);
+      const tickets = getTickets(commit.body, ticketUrlTemplate);
+      return { ...commit, pr, tickets, mainTicket };
+    };
 
 // Get the ticket from the header if it exists. The main ticket should
 // be the first thing in the header and has the following should match the rexex [A-Za-z]+-[0-9]+
@@ -124,15 +124,15 @@ export const getMainTicket = (
   header: string,
   ticketUrlTemplateSource?: string
 ) => {
-  const ticketId = header.match(/^[A-Za-z0-9]+-[0-9]+/)?.[0];
+  const ticketId = header.match(/^([A-Za-z0-9]+\/)*([A-Za-z0-9]+-[0-9]+)/)?.[2];
   const ticketUrlTemplate = Handlebars.compile(ticketUrlTemplateSource ?? "");
   return ticketId
     ? {
-        id: ticketId,
-        url: ticketUrlTemplate
-          ? ticketUrlTemplate({ id: ticketId })
-          : undefined,
-      }
+      id: ticketId,
+      url: ticketUrlTemplate
+        ? ticketUrlTemplate({ id: ticketId })
+        : undefined,
+    }
     : undefined;
 };
 
@@ -154,10 +154,10 @@ const getTickets = (
     .map((id) => id?.trim())
     .map(
       (id) =>
-        ({
-          id,
-          url: ticketUrlTemplate ? ticketUrlTemplate({ id }) : undefined,
-        } as Ticket)
+      ({
+        id,
+        url: ticketUrlTemplate ? ticketUrlTemplate({ id }) : undefined,
+      } as Ticket)
     );
 };
 
